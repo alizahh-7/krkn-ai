@@ -6,7 +6,7 @@ from krkn_ai.utils.logger import init_logger, get_logger
 
 from krkn_ai.algorithm.genetic import GeneticAlgorithm
 from krkn_ai.models.app import AppContext, KrknRunnerType
-from krkn_ai.models.custom_errors import PrometheusConnectionError
+from krkn_ai.models.custom_errors import FitnessFunctionCalculationError, PrometheusConnectionError
 from krkn_ai.utils.fs import read_config_from_file
 from krkn_ai.templates.generator import create_krkn_ai_template
 from krkn_ai.utils.cluster_manager import ClusterManager
@@ -82,6 +82,9 @@ def run(ctx,
     except PrometheusConnectionError as e:
         logger.error("%s", e)
         exit(1)
+    except FitnessFunctionCalculationError as e:
+        logger.error("Unable to calculate fitness function score: %s", e)
+        exit(1)
     except Exception as e:
         logger.exception("Something went wrong: %s", e)
         exit(1)
@@ -98,6 +101,7 @@ def run(ctx,
 @click.option('--pod-label', '-pl', help='Pod Label Keys(s) to filter. Supports Regex and comma separated values.', default='.*', required=False)
 @click.option('--node-label', '-nl', help='Node Label Keys(s) to filter. Supports Regex and comma separated values.', default='.*', required=False)
 @click.option('-v', '--verbose', count=True, help='Increase verbosity of output.')
+@click.option('--skip-pod-name', help='Pod name to skip. Supports comma separated values with regex.', default=None, required=False)
 @click.pass_context
 def discover(
     ctx,
@@ -106,7 +110,8 @@ def discover(
     namespace: str = "*",
     pod_label: str = ".*",
     node_label: str = ".*",
-    verbose: int = 0
+    verbose: int = 0,
+    skip_pod_name: str = None
 ):
     init_logger(None, verbose >= 2)
     logger = get_logger(__name__)
@@ -120,7 +125,8 @@ def discover(
     cluster_components = cluster_manager.discover_components(
         namespace_pattern=namespace,
         pod_label_pattern=pod_label,
-        node_label_pattern=node_label
+        node_label_pattern=node_label,
+        skip_pod_name=skip_pod_name
     )
 
     cluster_components_data = cluster_components.model_dump(mode='json', warnings='none')

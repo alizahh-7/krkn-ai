@@ -7,8 +7,8 @@ class DummyScenario(Scenario):
     krknctl_name: str = "dummy-scenario"
     krknhub_image: str = "containers.krkn-chaos.dev/krkn-chaos/krkn-hub:dummy-scenario"
 
-    end: DummyParameter = DummyParameter(name="END", value=10)
-    exit_status: DummyParameter = DummyParameter(name="EXIT_STATUS", value=0)
+    end: DummyEndParameter = DummyEndParameter()
+    exit_status: DummyExitStatusParameter = DummyExitStatusParameter()
 
     def __init__(self, **data):
         super().__init__(**data)

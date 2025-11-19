@@ -1,94 +1,112 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from krkn_ai.utils.rng import rng
 from krkn_ai.models.scenario.base import BaseParameter
 
-class DummyParameter(BaseParameter):
-    name: str
-    value: int
+class DummyEndParameter(BaseParameter):
+    krknhub_name: str = "END"
+    krknctl_name: str = "end"
+    value: int = 10
+
+
+class DummyExitStatusParameter(BaseParameter):
+    krknhub_name: str = "EXIT_STATUS"
+    krknctl_name: str = "exit-status"
+    value: int = 0
 
 
 class NamespaceParameter(BaseParameter):
-    name: str = "NAMESPACE"
+    krknhub_name: str = "NAMESPACE"
+    krknctl_name: str = "namespace"
     value: str = ""
 
 
 class PodLabelParameter(BaseParameter):
-    name: str = "POD_LABEL"
+    krknhub_name: str = "POD_LABEL"
+    krknctl_name: str = "pod-label"
     value: str = ""  # Example: service=payment
 
 
 class NamePatternParameter(BaseParameter):
-    name: str = "NAME_PATTERN"
+    krknhub_name: str = "NAME_PATTERN"
+    krknctl_name: str = "name-pattern"
     value: str = ".*"
 
 
 class DisruptionCountParameter(BaseParameter):
-    name: str = "DISRUPTION_COUNT"
+    krknhub_name: str = "DISRUPTION_COUNT"
+    krknctl_name: str = "disruption-count"
     value: int = 1
 
 
 class KillTimeoutParameter(BaseParameter):
-    name: str = "KILL_TIMEOUT"
+    krknhub_name: str = "KILL_TIMEOUT"
+    krknctl_name: str = "kill-timeout"
     value: int = 60
 
 
 class ExpRecoveryTimeParameter(BaseParameter):
-    name: str = "EXPECTED_RECOVERY_TIME"
+    krknhub_name: str = "EXPECTED_RECOVERY_TIME"
+    krknctl_name: str = "expected-recovery-time"
     value: int = 60
 
 
 
 class DurationParameter(BaseParameter):
-    name: str = "DURATION"
-    value: int = 60
+    krknhub_name: str = "DURATION"
     krknctl_name: str = "chaos-duration"
+    value: int = 60
 
 
 
 class PodSelectorParameter(BaseParameter):
-    name: str = "POD_SELECTOR"
+    krknhub_name: str = "POD_SELECTOR"
+    krknctl_name: str = "pod-selector"
     value: str = "" # Format: {app: foo}
 
 
 class BlockTrafficType(BaseParameter):
-    name: str = "BLOCK_TRAFFIC_TYPE"
+    krknhub_name: str = "BLOCK_TRAFFIC_TYPE"
+    krknctl_name: str = "block-traffic-type"
     value: str = "[Ingress, Egress]" # "[Ingress, Egress]", "[Ingress]", "[Egress]"
 
 
 class LabelSelectorParameter(BaseParameter):
-    name: str = "LABEL_SELECTOR"
+    krknhub_name: str = "LABEL_SELECTOR"
+    krknctl_name: str = "label-selector"
     value: str = "" # Example Value: k8s-app=etcd
 
 
 class ContainerNameParameter(BaseParameter):
-    name: str = "CONTAINER_NAME"
+    krknhub_name: str = "CONTAINER_NAME"
+    krknctl_name: str = "container-name"
     value: str = ""  # Example Value: etcd
 
 class ActionParameter(BaseParameter):
-    name: str = "ACTION"
+    krknhub_name: str = "ACTION"
+    krknctl_name: str = "action"
     value: str = "1"
     # possible_values = ["1", "9"]
 
 
 class TotalChaosDurationParameter(BaseParameter):
-    name: str = "TOTAL_CHAOS_DURATION"
-    value: int = 60
+    krknhub_name: str = "TOTAL_CHAOS_DURATION"
     krknctl_name: str = "chaos-duration"
+    value: int = 60
 
 
 class NodeCPUCoreParameter(BaseParameter):
-    name: str = "NODE_CPU_CORE"
-    value: float = 2
+    krknhub_name: str = "NODE_CPU_CORE"
     krknctl_name: str = "cores"
+    value: float = 2
 
 
 class NodeCPUPercentageParameter(BaseParameter):
     '''
     CPU usage percentage of the node cpu hog scenario between 20 and 100.
     '''
-    name: str = "NODE_CPU_PERCENTAGE"
-    value: int = 50
+    krknhub_name: str = "NODE_CPU_PERCENTAGE"
     krknctl_name: str = "cpu-percentage"
+    value: int = 50
 
     def mutate(self):
         if rng.random() < 0.5:
@@ -103,9 +121,9 @@ class NodeMemoryPercentageParameter(BaseParameter):
     '''
     Memory usage percentage of the node memory hog scenario between 20 and 100.
     '''
-    name: str = "MEMORY_CONSUMPTION_PERCENTAGE"
-    value: int = 50
+    krknhub_name: str = "MEMORY_CONSUMPTION_PERCENTAGE"
     krknctl_name: str = "memory-consumption"
+    value: int = 50
 
     def get_value(self):
         return f"{self.value}%"
@@ -121,9 +139,9 @@ class NodeMemoryPercentageParameter(BaseParameter):
 
 
 class NumberOfWorkersParameter(BaseParameter):
-    name: str = "NUMBER_OF_WORKERS"
-    value: int = 1
+    krknhub_name: str = "NUMBER_OF_WORKERS"
     krknctl_name: str = "memory-workers"
+    value: int = 1
 
     def mutate(self):
         self.value = rng.randint(1, 10)
@@ -139,33 +157,39 @@ class NodeSelectorParameter(BaseParameter):
     Memory-Hog:
     defines the node selector for choosing target nodes. If not specified, one schedulable node in the cluster will be chosen at random. If multiple nodes match the selector, all of them will be subjected to stress. If number-of-nodes is specified, that many nodes will be randomly selected from those identified by the selector.	
     '''
-    name: str = "NODE_SELECTOR"
+    krknhub_name: str = "NODE_SELECTOR"
+    krknctl_name: str = "node-selector"
     value: str = ""
 
 
 class TaintParameter(BaseParameter):
-    name: str = "TAINTS"
+    krknhub_name: str = "TAINTS"
+    krknctl_name: str = "taints"
     value: str = '[]'
 
 
 class NumberOfNodesParameter(BaseParameter):
-    name: str = "NUMBER_OF_NODES"
+    krknhub_name: str = "NUMBER_OF_NODES"
+    krknctl_name: str = "number-of-nodes"
     value: int = 1
 
 
 class HogScenarioImageParameter(BaseParameter):
-    name: str = "IMAGE"
+    krknhub_name: str = "IMAGE"
+    krknctl_name: str = "image"
     value: str = "quay.io/krkn-chaos/krkn-hog"
 
 class ObjectTypeParameter(BaseParameter):
-    name: str = "OBJECT_TYPE"
+    krknhub_name: str = "OBJECT_TYPE"
+    krknctl_name: str = "object-type"
     value: str = ""  # Available Types: pod, node
 
     def mutate(self):
         self.value = rng.choice(["pod", "node"])
  
 class ActionTimeParameter(BaseParameter):
-    name: str = "ACTION"
+    krknhub_name: str = "ACTION"
+    krknctl_name: str = "action"
     value: str = "skew_date" # Available Types: skew_date, skew_time
 
     def mutate(self):
@@ -173,39 +197,45 @@ class ActionTimeParameter(BaseParameter):
 
 
 class NetworkScenarioTypeParameter(BaseParameter):
-    name: str = "NETWORK_SCENARIO_TYPE"
-    value: str = "ingress"
+    krknhub_name: str = "NETWORK_SCENARIO_TYPE"
     krknctl_name: str = "traffic-type"
+    value: str = "ingress"
 
     def mutate(self):
         self.value = rng.choice(["ingress", "egress"])
 
 class NetworkScenarioImageParameter(BaseParameter):
-    name: str = "IMAGE"
+    krknhub_name: str = "IMAGE"
+    krknctl_name: str = "image"
     value: str = "quay.io/krkn-chaos/krkn:tools"
 
 class NetworkScenarioDurationParameter(BaseParameter):
-    name: str = "DURATION"
+    krknhub_name: str = "DURATION"
+    krknctl_name: str = "duration"
     value: int = 120
 
 class NetworkScenarioLabelSelectorParameter(BaseParameter):
-    name: str = "LABEL_SELECTOR"
+    krknhub_name: str = "LABEL_SELECTOR"
+    krknctl_name: str = "label-selector"
     value: str = ""
 
 class NetworkScenarioExecutionParameter(BaseParameter):
-    name: str = "EXECUTION"
+    krknhub_name: str = "EXECUTION"
+    krknctl_name: str = "execution"
     value: str = "parallel"
 
     def mutate(self):
         self.value = rng.choice(["serial", "parallel"])
 
 class NetworkScenarioNodeNameParameter(BaseParameter):
-    name: str = "NODE_NAME"
+    krknhub_name: str = "NODE_NAME"
+    krknctl_name: str = "node-name"
     value: str = ""
 
 class NetworkScenarioInterfacesParameter(BaseParameter):
     # TODO: Understand the format and values of the interfaces parameter
-    name: str = "INTERFACES"
+    krknhub_name: str = "INTERFACES"
+    krknctl_name: str = "interfaces"
     value: str = "[]"
 
 class NetworkParamData(BaseModel):
@@ -215,8 +245,9 @@ class NetworkParamData(BaseModel):
 
 
 class NetworkScenarioNetworkParamsParameter(BaseParameter):
-    name: str = "NETWORK_PARAMS"
-    value: NetworkParamData = NetworkParamData()
+    krknhub_name: str = "NETWORK_PARAMS"
+    krknctl_name: str = "network-params"
+    value: NetworkParamData = Field(default_factory=NetworkParamData)
 
     def mutate(self):
         self.value.latency = rng.randint(1, 1000)
@@ -227,8 +258,9 @@ class NetworkScenarioNetworkParamsParameter(BaseParameter):
         return "{" + f"latency: {self.value.latency}ms,loss: {self.value.loss},bandwidth: {self.value.bandwidth}mbit" + "}"
 
 class NetworkScenarioEgressParamsParameter(BaseParameter):
-    name: str = "EGRESS"
-    value: NetworkParamData = NetworkParamData()
+    krknhub_name: str = "EGRESS"
+    krknctl_name: str = "egress"
+    value: NetworkParamData = Field(default_factory=NetworkParamData)
 
     def mutate(self):
         self.value.latency = rng.randint(1, 1000)
@@ -240,38 +272,38 @@ class NetworkScenarioEgressParamsParameter(BaseParameter):
 
 class NetworkScenarioTargetNodeInterfaceParameter(BaseParameter):
     # TODO: Understand the format and values of the target-node-interface parameter
-    name: str = "TARGET_NODE_AND_INTERFACE"
-    value: str = "{}"
+    krknhub_name: str = "TARGET_NODE_AND_INTERFACE"
     krknctl_name: str = "target-node-interface"
-
-class NetworkScenarioWaitDurationParameter(BaseParameter):
-    name: str = "WAIT_DURATION"
-    value: int = 300
-
+    value: str = "{}"
 
 class DNSOutageDurationParameter(BaseParameter):
-    name: str = "TEST_DURATION"
-    value: int = 60
+    krknhub_name: str = "TEST_DURATION"
     krknctl_name: str = "chaos-duration"
+    value: int = 60
 
 class DNSOutageProtocolParameter(BaseParameter):
-    name: str = "PROTOCOL"
+    krknhub_name: str = "PROTOCOL"
+    krknctl_name: str = "protocol"
     value: str = "tcp,udp"
 
 class DNSPortParameter(BaseParameter):
-    name: str = "PORTS"
+    krknhub_name: str = "PORTS"
+    krknctl_name: str = "ports"
     value: str = ""
 
 
 class PodNameParameter(BaseParameter):
-    name: str = "POD_NAME"
+    krknhub_name: str = "POD_NAME"
+    krknctl_name: str = "pod-name"
     value: str = ""
 
 class IngressParameter(BaseParameter):
-    name: str = "INGRESS"
+    krknhub_name: str = "INGRESS"
+    krknctl_name: str = "ingress"
     value: str = "false"
 
 class EgressParameter(BaseParameter):
-    name: str = "EGRESS"
+    krknhub_name: str = "EGRESS"
+    krknctl_name: str = "egress"
     value: str = "true"
 

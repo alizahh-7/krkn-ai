@@ -5,14 +5,15 @@ from typing import Any
 
 
 class BaseParameter(BaseModel):
-    name: str
-    value: Any
-    krknctl_name: str = ""
+    krknctl_name: str = ""  # Name of parameter in krknctl
+    krknhub_name: str = ""  # Name of parameter in krknhub
 
-    def get_name(self):
-        if self.krknctl_name != "":
-            return self.krknctl_name
-        return self.name
+    value: Any  # Value of parameter that is going to be passed to krknctl or krknhub
+
+    def get_name(self, return_krknhub_name: bool = False):
+        if return_krknhub_name:
+            return self.krknhub_name
+        return self.krknctl_name
 
     def get_value(self):
         return self.value

@@ -23,12 +23,15 @@ class ClusterManager:
     def discover_components(self,
         namespace_pattern: str = None,
         pod_label_pattern: str = None,
-        node_label_pattern: str = None
+        node_label_pattern: str = None,
+        skip_pod_name: str = None,
     ) -> ClusterComponents:
         namespaces = self.list_namespaces(namespace_pattern)
 
+        skip_pod_name_patterns = self.__process_pattern(skip_pod_name)
+
         for i, namespace in enumerate(namespaces):
-            pods = self.list_pods(namespace, pod_label_pattern)
+            pods = self.list_pods(namespace, pod_label_pattern, skip_pod_name_patterns)
             namespaces[i].pods = pods
 
         return ClusterComponents(
@@ -54,13 +57,23 @@ class ClusterManager:
         logger.debug("Filtered namespaces: %d", len(filtered_namespaces))
         return [Namespace(name=ns) for ns in filtered_namespaces]
 
-    def list_pods(self, namespace: Namespace, pod_labels_patterns: List[str]) -> List[str]:
+    def list_pods(
+        self, 
+        namespace: Namespace,
+        pod_labels_patterns: List[str],
+        skip_pod_name_patterns: List[str] = []
+    ) -> List[str]:
         pod_labels_patterns = self.__process_pattern(pod_labels_patterns)
 
         pods = self.core_api.list_namespaced_pod(namespace=namespace.name).items
         pod_list = []
 
         for pod in pods:
+            # Skip if podname matches any of the skip_pod_name_patterns
+            if any(re.match(pattern, pod.metadata.name) for pattern in skip_pod_name_patterns):
+                logger.debug("Skipping pod %s in namespace %s", pod.metadata.name, namespace.name)
+                continue
+
             pod_component = Pod(
                 name=pod.metadata.name,
             )
@@ -150,7 +163,11 @@ class ClusterManager:
 
         return interfaces
 
-    def __process_pattern(self, pattern_string: str) -> List[str]:
+    def __process_pattern(self, pattern_string: str = None) -> List[str]:
+        # Used for handling skip_pod_name pattern None
+        if pattern_string is None:
+            return []
+
         # Check whether multiple namespaces are specified
         if ',' in pattern_string:
             patterns = [pattern.strip() for pattern in pattern_string.split(',')]

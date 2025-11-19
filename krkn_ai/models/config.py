@@ -127,6 +127,8 @@ class ConfigFile(BaseModel):
     generations: int = 20  # Total number of generations to run.
     population_size: int = 10  # Initial population size
 
+    wait_duration: int = const.WAIT_DURATION  # Time to wait after each scenario run (Default: 120 seconds)
+
     mutation_rate: float = const.MUTATION_RATE  # How often mutation should occur for each scenario parameter (0.0-1.0)
     scenario_mutation_rate: float = const.SCENARIO_MUTATION_RATE  # How often scenario mutation should occur (0.0-1.0)
     crossover_rate: float = const.CROSSOVER_RATE    # How often crossover should occur for each scenario parameter (0.0-1.0)

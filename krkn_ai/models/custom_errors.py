@@ -12,3 +12,9 @@ class PrometheusConnectionError(Exception):
     Exception raised when there is an error connecting to Prometheus.
     """
     pass
+
+class FitnessFunctionCalculationError(Exception):
+    """
+    Exception raised when there is an error calculating fitness function.
+    """
+    pass

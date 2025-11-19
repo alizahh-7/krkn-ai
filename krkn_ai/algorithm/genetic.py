@@ -188,8 +188,8 @@ class GeneticAlgorithm:
             # instantiate new scenario for a scenario type
             new_scenario = scenario_cls(cluster_components=self.config.cluster_components)
 
-            common_params = set([x.name for x in new_scenario.parameters]) & set(
-                [x.name for x in scenario.parameters]
+            common_params = set([type(x) for x in new_scenario.parameters]) & set(
+                [type(x) for x in scenario.parameters]
             )
             # Do not consider the same scenario type for scenario mutation
             if len(common_params) > 0 and type(new_scenario) != type(scenario):
@@ -202,13 +202,13 @@ class GeneticAlgorithm:
         new_scenario = rng.choice(common_scenarios)
 
         # Identify common parameters and set them to the new scenario
-        common_params = set([x.name for x in new_scenario.parameters]) & set([x.name for x in scenario.parameters])
-        for param in common_params:
+        common_params = set([type(x) for x in new_scenario.parameters]) & set([type(x) for x in scenario.parameters])
+        for param_type in common_params:
             # Get parameter value from original scenario
-            param_value = self.__get_param_value(scenario, param)
+            param_value = self.__get_param_value(scenario, param_type)
 
             # Set parameter value for new scenario
-            self.__set_param_value(new_scenario, param, param_value)
+            self.__set_param_value(new_scenario, param_type, param_value)
 
         return True, new_scenario
 
@@ -258,8 +258,8 @@ class GeneticAlgorithm:
             logger.warning("Scenario %s or %s does not have property 'parameters'", scenario_a, scenario_b)
             return scenario_a, scenario_b
 
-        common_params = set([x.name for x in scenario_a.parameters]) & set(
-            [x.name for x in scenario_b.parameters]
+        common_params = set([type(x) for x in scenario_a.parameters]) & set(
+            [type(x) for x in scenario_b.parameters]
         )
 
         if len(common_params) == 0:
@@ -268,15 +268,15 @@ class GeneticAlgorithm:
             return scenario_a, scenario_b
         else:
             # if there are common params, lets switch values between them
-            for param in common_params:
+            for param_type in common_params:
                 if rng.random() < self.config.crossover_rate:
                     # find index of param in list
-                    a_value = self.__get_param_value(scenario_a, param)
-                    b_value = self.__get_param_value(scenario_b, param)
+                    a_value = self.__get_param_value(scenario_a, param_type)
+                    b_value = self.__get_param_value(scenario_b, param_type)
 
                     # swap param values
-                    self.__set_param_value(scenario_a, param, b_value)
-                    self.__set_param_value(scenario_b, param, a_value)
+                    self.__set_param_value(scenario_a, param_type, b_value)
+                    self.__set_param_value(scenario_b, param_type, a_value)
 
             return scenario_a, scenario_b
 
@@ -354,14 +354,14 @@ class GeneticAlgorithm:
                 elif self.format == 'yaml':
                     yaml.dump(result, file_handler, sort_keys=False)
 
-    def __get_param_value(self, scenario: Scenario, param_name):
+    def __get_param_value(self, scenario: Scenario, param_type):
         for param in scenario.parameters:
-            if param_name == param.name:
+            if type(param) == param_type:
                 return param.value
-        raise ValueError(f"Parameter {param_name} not found in scenario {scenario}")
+        raise ValueError(f"Parameter type {param_type} not found in scenario {scenario}")
 
-    def __set_param_value(self, scenario: Scenario, param_name, value):
+    def __set_param_value(self, scenario: Scenario, param_type, value):
         for param in scenario.parameters:
-            if param_name == param.name:
+            if type(param) == param_type:
                 param.value = value
                 return

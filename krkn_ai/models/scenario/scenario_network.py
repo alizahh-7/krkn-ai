@@ -19,7 +19,6 @@ class NetworkScenario(Scenario):
     network_params: NetworkScenarioNetworkParamsParameter = NetworkScenarioNetworkParamsParameter()
     egress_params: NetworkScenarioEgressParamsParameter = NetworkScenarioEgressParamsParameter()
     target_node_interface: NetworkScenarioTargetNodeInterfaceParameter = NetworkScenarioTargetNodeInterfaceParameter()
-    wait_duration: NetworkScenarioWaitDurationParameter = NetworkScenarioWaitDurationParameter()
 
     def __init__(self, **data):
         super().__init__(**data)
@@ -38,7 +37,6 @@ class NetworkScenario(Scenario):
             self.egress_params,
             # self.interfaces,
             self.target_node_interface,
-            # self.wait_duration,
         ]
 
     def mutate(self):

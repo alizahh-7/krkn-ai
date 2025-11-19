@@ -84,7 +84,11 @@ export HOST="http://$(kubectl get service rs -o json | jq -r '.status.loadBalanc
 Krkn-AI uses YAML configuration files to define experiments. You can generate a sample config file dynamically by running Krkn-AI discover command.
 
 ```bash
-uv run krkn_ai discover -k ./tmp/kubeconfig.yaml -n "robot-shop" -pl "service" -o ./tmp/krkn-ai.yaml
+uv run krkn_ai discover -k ./tmp/kubeconfig.yaml \
+  -n "robot-shop" \
+  -pl "service" \
+  -o ./tmp/krkn-ai.yaml \
+  --skip-pod-name "nginx-proxy.*"
 ```
 
 ```yaml
@@ -96,6 +100,9 @@ generations: 5
 population_size: 10
 composition_rate: 0.3
 population_injection_rate: 0.1
+
+# Duration to wait before running next scenario (seconds)
+wait_duration: 30
 
 # Fitness function configuration
 fitness_function: 
@@ -196,6 +203,8 @@ Options:
   -nl, --node-label TEXT  Node Label Keys(s) to filter. Supports Regex and
                           comma separated values.
   -v, --verbose           Increase verbosity of output.
+  --skip-pod-name TEXT    Pod name to skip. Supports comma separated values
+                          with regex.
   --help                  Show this message and exit.
 
 

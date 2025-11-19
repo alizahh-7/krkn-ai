@@ -2,11 +2,13 @@ import os
 import json
 import datetime
 import tempfile
+import time
 
 from krkn_lib.prometheus.krkn_prometheus import KrknPrometheus
 from krkn_ai.chaos_engines.health_check_watcher import HealthCheckWatcher
 from krkn_ai.models.app import CommandRunResult, FitnessResult, FitnessScoreResult, KrknRunnerType
 from krkn_ai.models.config import ConfigFile, FitnessFunctionType
+from krkn_ai.models.custom_errors import FitnessFunctionCalculationError
 from krkn_ai.models.scenario.base import Scenario, BaseScenario, CompositeDependency, CompositeScenario
 from krkn_ai.models.scenario.factory import ScenarioFactory
 from krkn_ai.utils import run_shell
@@ -19,9 +21,9 @@ logger = get_logger(__name__)
 
 # TODO: Cleanup of temp kubeconfig after running the script
 
-PODMAN_TEMPLATE = 'podman run --env-host=true -e PUBLISH_KRAKEN_STATUS="False" -e TELEMETRY_PROMETHEUS_BACKUP="False" -e WAIT_DURATION=0 {env_list} --net=host -v {kubeconfig}:/home/krkn/.kube/config:Z {image}'
+PODMAN_TEMPLATE = 'podman run --env-host=true -e PUBLISH_KRAKEN_STATUS="False" -e TELEMETRY_PROMETHEUS_BACKUP="False" -e WAIT_DURATION={wait_duration} {env_list} --net=host -v {kubeconfig}:/home/krkn/.kube/config:Z {image}'
 
-KRKNCTL_TEMPLATE = "krknctl run {name} --telemetry-prometheus-backup False --wait-duration 0 --kubeconfig {kubeconfig} {env_list}"
+KRKNCTL_TEMPLATE = "krknctl run {name} --telemetry-prometheus-backup False --wait-duration {wait_duration} --kubeconfig {kubeconfig} {env_list}"
 
 KRKNCTL_GRAPH_RUN_TEMPLATE = "krknctl graph run {path} --kubeconfig {kubeconfig}"
 
@@ -164,10 +166,10 @@ class KrknRunner:
             # Generate env items
             env_list = ""
             for parameter in scenario.parameters:
-                # we use parameter.name instead of parameter.get_name() because krknhub uses parameter.name
-                env_list += f' -e {parameter.name}="{parameter.get_value()}" '
+                env_list += f' -e {parameter.get_name(return_krknhub_name=True)}="{parameter.get_value()}" '
 
             command = PODMAN_TEMPLATE.format(
+                wait_duration=self.config.wait_duration,
                 env_list=env_list,
                 kubeconfig=self.config.kubeconfig_file_path,
                 image=scenario.krknhub_image,
@@ -176,15 +178,13 @@ class KrknRunner:
         elif self.runner_type == KrknRunnerType.CLI_RUNNER:
             # Generate env parameters for scenario
             # krknctl the env parameter keys are small-casing, separated by hyphens
-            # by default we use upper-casing, separated by underscore.
             env_list = ""
             for parameter in scenario.parameters:
-                # TODO: This is a hack to make krknctl work. Probably need some unified naming convention for parameters.
-                # We use parameter.get_name() because krknctl names can be different from parameter.name which is used mainly in Krknhub
-                param_name = (parameter.get_name()).lower().replace("_", "-")
+                param_name = parameter.get_name(return_krknhub_name=False)
                 env_list += f'--{param_name} "{parameter.get_value()}" '
 
             command = KRKNCTL_TEMPLATE.format(
+                wait_duration=self.config.wait_duration,
                 env_list=env_list,
                 kubeconfig=self.config.kubeconfig_file_path,
                 name=scenario.krknctl_name,
@@ -287,7 +287,11 @@ class KrknRunner:
 
     def __generate_scenario_json(self, scenario: Scenario, depends_on: str = None):
         # generate a json based on https://krkn-chaos.dev/docs/krknctl/randomized-chaos-testing/#example
-        env = {param.name: str(param.get_value()) for param in scenario.parameters}
+        # It uses krknhub env naming to define test parameters.
+        env = {
+            param.get_name(return_krknhub_name=True): str(param.get_value()) 
+            for param in scenario.parameters
+        }
         result = {
             "image": scenario.krknhub_image,
             "name": scenario.name,
@@ -302,14 +306,21 @@ class KrknRunner:
         if env_is_truthy("MOCK_FITNESS"):
             return rng.random()
 
-        try:
-            if fitness_type == FitnessFunctionType.point:
-                return self.calculate_point_fitness(start, end, query)
-            elif fitness_type == FitnessFunctionType.range:
-                return self.calculate_range_fitness(start, end, query)
-        except Exception as error:
-            logger.error("Fitness function calculation failed: %s", error)
-            raise error
+        # Retry to calculate fitness function if it fails
+        # Case when data isn't available in prometheus for latest time range
+        retries = 3 # Number of retries to calculate fitness function
+        retry_delay = 10 # in seconds
+        for retry in range(retries):
+            try:
+                if fitness_type == FitnessFunctionType.point:
+                    return self.calculate_point_fitness(start, end, query)
+                elif fitness_type == FitnessFunctionType.range:
+                    return self.calculate_range_fitness(start, end, query)
+            except Exception as error:
+                logger.error(f"Fitness function calculation failed: {error}")
+                logger.info(f"Retrying fitness function calculation... (retry {retry + 1} of {retries})")
+                time.sleep(retry_delay)
+        raise FitnessFunctionCalculationError(f"Fitness function calculation failed after {retries} retries")
 
     def calculate_fitness_score_for_items(self, start, end):
         '''
