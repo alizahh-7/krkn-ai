@@ -1,6 +1,7 @@
 import os
 import copy
 import json
+from typing_extensions import Dict
 import yaml
 from typing import List
 
@@ -41,7 +42,7 @@ class GeneticAlgorithm:
         self.population = []
         self.format = format
 
-        self.seen_population = {}  # Map between scenario and its result
+        self.seen_population: Dict[BaseScenario, CommandRunResult] = {}  # Map between scenario and its result
         self.best_of_generation = []
 
         self.health_check_reporter = HealthCheckReporter(self.output_dir, self.config.output)
@@ -147,9 +148,10 @@ class GeneticAlgorithm:
         # we will rely on mutation for the same parents to produce newer samples
         if scenario in self.seen_population:
             logger.info("Scenario %s already evaluated, skipping fitness calculation.", scenario)
-            scenario = copy.deepcopy(self.seen_population[scenario])
-            scenario.generation_id = generation_id
-            return scenario
+            result = self.seen_population[scenario]
+            result = copy.deepcopy(result)
+            result.generation_id = generation_id
+            return result
         scenario_result = self.krkn_client.run(scenario, generation_id)
         # Save scenario result
         self.save_scenario_result(scenario_result)
@@ -213,21 +215,31 @@ class GeneticAlgorithm:
 
         return True, new_scenario
 
-
+    # TODO: Implement a more sophisticated selection method like Tournament Selection for better noise tolerance in fitness scores
     def select_parents(self, fitness_scores: List[CommandRunResult]):
         """
         Selects two parents using Roulette Wheel Selection (proportionate selection).
         Higher fitness means higher chance of being selected.
         """
-        total_fitness = sum([x.fitness_result.fitness_score for x in fitness_scores])
-
+        raw = [x.fitness_result.fitness_score for x in fitness_scores]
         scenarios = [x.scenario for x in fitness_scores]
+
+        min_f = min(raw)
+        max_f = max(raw)
+
+        # Normalize to positive range
+        if max_f == min_f:
+            shifted = [1 for _ in raw]   # identical fitness
+        else:
+            shifted = [(f - min_f) / (max_f - min_f) + 1e-8 for f in raw]
+
+        total_fitness = sum(shifted)
 
         if total_fitness == 0:  # Handle case where all fitness scores are zero
             return rng.choice(scenarios), rng.choice(scenarios)
 
         # Normalize fitness scores to get probabilities
-        probabilities = [x.fitness_result.fitness_score / total_fitness for x in fitness_scores]
+        probabilities = [f / total_fitness for f in shifted]
 
         # Select parents based on probabilities
         parent1 = rng.choices(items=scenarios, weights=probabilities, k=1)[0]
