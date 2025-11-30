@@ -1,6 +1,7 @@
 from krkn_ai.utils.rng import rng
 from krkn_ai.models.scenario.base import Scenario
 from krkn_ai.models.scenario.parameters import *
+from krkn_ai.models.custom_errors import ScenarioParameterInitError
 
 
 class SynFloodScenario(Scenario):
@@ -45,17 +46,25 @@ class SynFloodScenario(Scenario):
             and any(service.ports for service in ns.services)
         ]
 
-        if namespace_candidates:
-            namespace = rng.choice(namespace_candidates)
-            self.namespace.value = namespace.name
+        if len(namespace_candidates) == 0:
+            raise ScenarioParameterInitError("No services with ports found in cluster components for syn-flood scenario")
 
-            services_with_ports = [
-                service for service in namespace.services if service.ports
-            ]
-            service = rng.choice(services_with_ports)
-            self.target_service.value = service.name
+        namespace = rng.choice(namespace_candidates)
+        self.namespace.value = namespace.name
 
-            available_ports = [port.port for port in service.ports if port.port]
-            self.target_port.value = rng.choice(available_ports) if available_ports else self.target_port.value
-            self.target_service_label.value = ""
-            return
+        services_with_ports = [
+            service for service in namespace.services if service.ports
+        ]
+        
+        if len(services_with_ports) == 0:
+            raise ScenarioParameterInitError(f"No services with ports found in namespace {namespace.name} for syn-flood scenario")
+        
+        service = rng.choice(services_with_ports)
+        self.target_service.value = service.name
+
+        available_ports = [port.port for port in service.ports if port.port]
+        if len(available_ports) == 0:
+            raise ScenarioParameterInitError(f"No valid ports found for service {service.name} in namespace {namespace.name}")
+        
+        self.target_port.value = rng.choice(available_ports)
+        self.target_service_label.value = ""
