@@ -209,7 +209,10 @@ class NetworkScenarioImageParameter(BaseParameter):
     krknctl_name: str = "image"
     value: str = "quay.io/krkn-chaos/krkn:tools"
 
-class NetworkScenarioDurationParameter(BaseParameter):
+class StandardDurationParameter(BaseParameter):
+    """
+    Standard duration parameter with krknctl_name="duration" and krknhub_name="DURATION".
+    """
     krknhub_name: str = "DURATION"
     krknctl_name: str = "duration"
     value: int = 120
@@ -306,6 +309,37 @@ class EgressParameter(BaseParameter):
     krknhub_name: str = "EGRESS"
     krknctl_name: str = "egress"
     value: str = "true"
+
+# PVC Scenario Parameters
+class PVCNameParameter(BaseParameter):
+    krknhub_name: str = "PVC_NAME"
+    krknctl_name: str = "pvc-name"
+    value: str = ""
+
+class FillPercentageParameter(BaseParameter):
+    krknhub_name: str = "FILL_PERCENTAGE"
+    krknctl_name: str = "fill-percentage"
+    value: int = 50
+
+    def mutate(self, min_value: float = None):
+        """
+        Mutate the fill percentage value.
+        Args:
+            min_value: Minimum value (e.g., current usage percentage). If provided, ensures value > min_value.
+        """
+        if rng.random() < 0.5:
+            self.value += rng.randint(1, 35) * self.value / 100
+        else:
+            self.value -= rng.randint(1, 25) * self.value / 100
+        self.value = int(self.value)
+        
+        # Ensure value is greater than min_value if provided
+        if min_value is not None:
+            min_value_int = int(min_value) + 1  # Must be at least 1% higher than current
+            self.value = max(self.value, min_value_int)
+        
+        self.value = max(self.value, 1)  # Minimum 1% to ensure some filling
+        self.value = min(self.value, 99)  # Maximum 99%
 
 # SYN Flood Scenario Parameters
 class SynFloodPacketSizeParameter(BaseParameter):
