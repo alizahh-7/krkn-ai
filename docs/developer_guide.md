@@ -1,69 +1,87 @@
 # Developer Guide
 
-This guide talks about how to setup local environment for your development and testing for Krkn-AI.
+This guide explains how to set up a local development environment for Krkn-AI using Minikube.
 
+## Prerequisites
 
-## 1. Setup Krkn-AI repository
+Ensure you have the following installed:
+- [kubectl](https://kubernetes.io/docs/tasks/tools/) - Kubernetes CLI
+- [jq](https://jqlang.github.io/jq/download/) - JSON processor
+- [uv](https://docs.astral.sh/uv/getting-started/installation/) - Python package manager
+
+## 1. Set Up Krkn-AI Repository
 
 ```bash
 # Option 1: Clone repository
 git clone https://github.com/krkn-chaos/krkn-ai.git
 
-# Option 2: Fork the repository to your Github profile and clone it.
+# Option 2: Fork the repository to your GitHub profile and clone it
 git clone https://github.com/<username>/krkn-ai.git
+
+cd krkn-ai
 ```
 
-Install the necessary pre-requisites and Krkn-AI CLI as per project [readme](../README.md).
+Install the necessary dependencies and Krkn-AI CLI as per the project [README](../README.md).
 
 ```bash
 # Verify krkn-ai installation
 uv run krkn_ai --help
 ```
 
-## 2. Setup Minikube
+## 2. Set Up Minikube
 
-We will be using [minikube](https://minikube.sigs.k8s.io/docs/start/) to setup a small local cluster.
+We use [Minikube](https://minikube.sigs.k8s.io/docs/start/) to create a local Kubernetes cluster.
 
 ```bash
-# Install on Linux
+# Install Minikube on Linux
 curl -LO https://github.com/kubernetes/minikube/releases/latest/download/minikube-linux-amd64
 sudo install minikube-linux-amd64 /usr/local/bin/minikube && rm minikube-linux-amd64
 
-# Create minikube cluster
+# Create the cluster
 minikube start
 
-# Verify cluster
+# Switch to minikube cluster context
+kubectl config use-context minikube
+
+# Verify cluster is running
 kubectl get pods -A
 
-# Generate kubeconfig
-./scripts/generate-kubeconfig.sh
-ls -l | grep kubeconfig.yaml
+# Generate kubeconfig for Krkn-AI
+kubectl config view \
+  --context=minikube \
+  --minify \
+  --flatten \
+  --raw > kubeconfig.yaml
+kubectl --kubeconfig=kubeconfig.yaml get pods -A
 ```
 
+> **Note:** The generated `kubeconfig.yaml` is used by Krkn-AI to connect to your cluster.
 
 ## 3. Install Prometheus
 
+Krkn-AI uses Prometheus metrics for fitness evaluation during chaos testing.
+
 ### Install Prometheus Operator
 
-[Prometheus Operator](https://prometheus-operator.dev/) makes it easier to manage Prometheus instances on cluster. 
+[Prometheus Operator](https://prometheus-operator.dev/) simplifies Prometheus management on Kubernetes.
 
 ```bash
 LATEST=$(curl -s https://api.github.com/repos/prometheus-operator/prometheus-operator/releases/latest | jq -cr .tag_name)
 curl -sL https://github.com/prometheus-operator/prometheus-operator/releases/download/${LATEST}/bundle.yaml | kubectl create -f -
 ```
 
-### Setup Prometheus Instance
+### Deploy Prometheus Instance
 
 ```bash
 # Install Prometheus
 kubectl apply -f scripts/monitoring/prometheus.yaml
 
-# Setup monitoring services for kube and node metrics 
+# Set up monitoring services for cluster and node metrics
 kubectl apply -f scripts/monitoring/kube_state_metrics.yaml
 kubectl apply -f scripts/monitoring/node_exporter.yaml
 ```
 
-After setting up above monitoring serivces, we should be able to query prometheus after couple of minutes.
+Wait a couple of minutes for the services to initialize, then verify Prometheus is working:
 
 ```bash
 curl -G \
@@ -73,17 +91,19 @@ curl -G \
 
 ## 4. Deploy Sample Microservice
 
+We'll deploy [Robot Shop](https://github.com/instana/robot-shop), a sample microservices application for testing.
+
 ```bash
-# Deploy robot-shop example
+# Deploy robot-shop
 export DEMO_NAMESPACE=robot-shop
 export IS_OPENSHIFT=false
 ./scripts/setup-demo-microservice.sh
 
-# Switch to application namespace
+# Switch to the application namespace
 kubectl config set-context --current --namespace=$DEMO_NAMESPACE
 kubectl get pods
 
-# Setup nginx reverse proxy
+# Set up nginx reverse proxy for health checks
 ./scripts/setup-nginx.sh
 export HOST="http://$(minikube ip):$(kubectl get service rs -o json | jq -r '.spec.ports[0].nodePort')"
 
@@ -91,11 +111,11 @@ export HOST="http://$(minikube ip):$(kubectl get service rs -o json | jq -r '.sp
 ./scripts/test-nginx-routes.sh
 ```
 
-## 5. Running Krkn-AI
+## 5. Run Krkn-AI
 
-### Discover components
+### Discover Cluster Components
 
-Let us auto-generate initial krkn-ai config file for the testing.
+Auto-generate an initial Krkn-AI configuration file:
 
 ```bash
 uv run krkn_ai discover -k ./kubeconfig.yaml \
@@ -106,11 +126,11 @@ uv run krkn_ai discover -k ./kubeconfig.yaml \
   --skip-pod-name "nginx-proxy.*"
 ```
 
-This command will generate `krkn-ai.yaml` that contains details about cluster components along with few boilerplate code for test configuration. Feel free to modify the code, add health check endpoints, update Fitness function, enable scenarios before running the krkn-ai test.
+This generates `krkn-ai.yaml` containing cluster component details and boilerplate test configuration. Review and modify the file as needed—add health check endpoints, adjust the fitness function, and enable desired scenarios.
 
-> Note: Specific scenarios might not work depending on the cluster environment, as we are not using an actual node or due to limited permissions.
+> **Note:** Some scenarios may not work on Minikube due to limited node access or permissions.
 
-### Start Krkn-AI tests
+### Start Krkn-AI Tests
 
 ```bash
 export PROMETHEUS_URL="http://$(minikube ip):30900"
@@ -122,3 +142,13 @@ uv run krkn_ai run -vv \
     -p HOST=$HOST
 ```
 
+Results will be saved to the `./results` directory, including logs and generation reports.
+
+## Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| `kubectl` commands fail | Ensure Minikube is running: `minikube status` |
+| Prometheus query returns empty | Wait 2-3 minutes for metrics to populate |
+| Pods stuck in `Pending` state | Check resources: `minikube ssh -- df -h` |
+| Cannot reach services | Verify Minikube IP: `minikube ip` |
