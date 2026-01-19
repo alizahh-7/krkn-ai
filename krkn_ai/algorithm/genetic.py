@@ -22,6 +22,12 @@ from krkn_ai.models.custom_errors import PopulationSizeError, UniqueScenariosErr
 from krkn_ai.utils.output import format_result_filename, format_duration
 from krkn_ai.utils.elastic_client import ElasticSearchClient
 
+from krkn_ai.constants import (
+    MIN_SCENARIO_MUTATION_RATE,
+    MAX_SCENARIO_MUTATION_RATE,
+    FITNESS_IMPROVEMENT_THRESHOLD
+)
+
 logger = get_logger(__name__)
 
 
@@ -44,6 +50,12 @@ class GeneticAlgorithm:
         self.config = config
         self.population = []
         self.format = format
+
+        self.fitness_history = []
+        self.initial_mutation_rate = self.config.scenario_mutation_rate
+        self.min_mutation_rate = MIN_SCENARIO_MUTATION_RATE
+        self.max_mutation_rate = MAX_SCENARIO_MUTATION_RATE
+        self.improvement_threshold = FITNESS_IMPROVEMENT_THRESHOLD
 
         self.valid_scenarios = ScenarioFactory.generate_valid_scenarios(self.config)  # List valid scenarios
         self.seen_population: Dict[BaseScenario, CommandRunResult] = {}  # Map between scenario and its result
@@ -124,6 +136,11 @@ class GeneticAlgorithm:
             self.best_of_generation.append(fitness_scores[0])
             logger.info("Best Fitness: %f", fitness_scores[0].fitness_result.fitness_score)
 
+            best_fitness = fitness_scores[0].fitness_result.fitness_score
+            self.fitness_history.append(best_fitness)
+
+            self.adapt_mutation_rate()
+
             # Repopulate off-springs
             self.population = []
             for _ in range(self.config.population_size // 2):
@@ -158,6 +175,32 @@ class GeneticAlgorithm:
                 self.population.extend(self.create_population(self.config.population_injection_size))
 
             cur_generation += 1
+
+    def adapt_mutation_rate(self):
+        if len(self.fitness_history) < 2:
+            return
+
+        prev = self.fitness_history[-2]
+        curr = self.fitness_history[-1]
+
+        improvement = curr - prev
+
+        if improvement < self.improvement_threshold:
+            self.config.scenario_mutation_rate *= 1.2
+            logger.debug("Fitness stagnated → increasing mutation rate")
+        else:
+            self.config.scenario_mutation_rate *= 0.9
+            logger.debug("Fitness improving → decreasing mutation rate")
+
+        self.config.scenario_mutation_rate = max(
+            self.min_mutation_rate,
+            min(self.config.scenario_mutation_rate, self.max_mutation_rate)
+        )
+
+        logger.info(
+            "Adaptive mutation rate: %.4f",
+            self.config.scenario_mutation_rate
+        )
 
     def create_population(self, population_size) -> List[BaseScenario]:
         """Generate random population for algorithm"""
