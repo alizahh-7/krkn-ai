@@ -79,6 +79,8 @@ podman run --rm \
   -e KUBECONFIG="/mount/kubeconfig.yaml" \
   -e OUTPUT_DIR="/mount/result/" \
   -e EXTRA_PARAMS="HOST=${HOST}" \
+  -e PROMETHEUS_URL="${PROMETHEUS_URL}" \
+  -e PROMETHEUS_TOKEN="${PROMETHEUS_TOKEN}" \
   -e VERBOSE=2 \
   quay.io/krkn-chaos/krkn-ai:latest
 ```
@@ -114,6 +116,8 @@ podman run --rm \
   -e KUBECONFIG="/mount/kubeconfig.yaml" \
   -e OUTPUT_DIR="/mount/result/" \
   -e EXTRA_PARAMS="HOST=${HOST}" \
+  -e PROMETHEUS_URL="${PROMETHEUS_URL}" \
+  -e PROMETHEUS_TOKEN="${PROMETHEUS_TOKEN}" \
   -e VERBOSE=2 \
   quay.io/krkn-chaos/krkn-ai:latest
 ```
@@ -138,6 +142,8 @@ podman run --rm \
   -e KUBECONFIG="/mount/kubeconfig.yaml" \
   -e OUTPUT_DIR="/mount/result/" \
   -e EXTRA_PARAMS="HOST=${HOST}" \
+  -e PROMETHEUS_URL="${PROMETHEUS_URL}" \
+  -e PROMETHEUS_TOKEN="${PROMETHEUS_TOKEN}" \
   -e VERBOSE=2 \
   quay.io/krkn-chaos/krkn-ai:latest
 ```

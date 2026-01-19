@@ -52,34 +52,30 @@ case "$MODE_LOWER" in
         fi
         
         # Build the command
-        CMD="uv run krkn_ai discover --kubeconfig $KUBECONFIG --output $OUTPUT_DIR/krkn-ai.yaml"
+        CMD=(uv run krkn_ai discover --kubeconfig "$KUBECONFIG" --output "$OUTPUT_DIR/krkn-ai.yaml")
         
         # Add optional parameters
         if [ -n "$NAMESPACE" ]; then
-            CMD="$CMD --namespace $NAMESPACE"
+            CMD+=(--namespace "$NAMESPACE")
         fi
-        
         if [ -n "$POD_LABEL" ]; then
-            CMD="$CMD --pod-label $POD_LABEL"
+            CMD+=(--pod-label "$POD_LABEL")
         fi
-        
-        if [ -n "$NODE_LABEL" ]; then
-            CMD="$CMD --node-label $NODE_LABEL"
+        if [ -n "$POD_LABEL" ]; then
+            CMD+=(--node-label "$NODE_LABEL")
         fi
-        
         if [ -n "$SKIP_POD_NAME" ]; then
-            CMD="$CMD --skip-pod-name $SKIP_POD_NAME"
+            CMD+=(--skip-pod-name "$SKIP_POD_NAME")
         fi
-        
         # Add verbosity flags
         if [ "$VERBOSE" -ge 1 ]; then
             for ((i=0; i<$VERBOSE; i++)); do
-                CMD="$CMD -v"
+                CMD+=(-v)
             done
         fi
         
-        echo "Executing: $CMD"
-        eval $CMD
+        echo "Executing: ${CMD[*]}"
+        "${CMD[@]}"
         ;;
         
     run)
