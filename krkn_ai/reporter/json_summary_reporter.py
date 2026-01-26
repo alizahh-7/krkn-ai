@@ -17,7 +17,7 @@ logger = get_logger(__name__)
 class JSONSummaryReporter:
     """
     Reporter class for generating and saving unified JSON summary files.
-    
+
     This class consolidates all run statistics into a single results.json file
     for easier analysis and programmatic access.
     """
