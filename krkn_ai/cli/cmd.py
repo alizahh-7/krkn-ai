@@ -52,6 +52,13 @@ def main():
     help="Additional parameters for config file in key=value format.",
     default=[],
 )
+@click.option(
+    "--seed",
+    "-s",
+    type=int,
+    help="Random seed for reproducible runs. Overrides seed in config file.",
+    default=None,
+)
 @click.option("-v", "--verbose", count=True, help="Increase verbosity of output.")
 @click.pass_context
 def run(
@@ -62,6 +69,7 @@ def run(
     format: str = "yaml",
     runner_type: str = None,
     param: list[str] = None,
+    seed: int = None,
     verbose: int = 0,  # Default to INFO level
 ):
     init_logger(output, verbose >= 2)
@@ -83,6 +91,10 @@ def run(
     except ValidationError as err:
         logger.error("Unable to parse config file: %s", err)
         exit(1)
+
+    # Override seed from CLI if provided
+    if seed is not None:
+        parsed_config.seed = seed
 
     # Convert user-friendly string to enum if provided
     enum_runner_type = None

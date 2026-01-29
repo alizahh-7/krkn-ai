@@ -193,6 +193,8 @@ class ConfigFile(BaseModel):
     kubeconfig_file_path: str  # Path to kubeconfig
     parameters: Dict[str, str] = {}
 
+    seed: Optional[int] = None  # Optional: Random seed for reproducible runs
+
     generations: Optional[int] = (
         20  # Total number of generations to run. Ignored if duration is set.
     )

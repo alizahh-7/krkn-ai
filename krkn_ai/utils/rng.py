@@ -1,13 +1,23 @@
 import numpy as np
-from typing import List, Any
+from typing import List, Any, Optional
 from typing import TypeVar, Sequence
 
 T = TypeVar("T")
 
 
 class RNG:
-    def __init__(self):
-        self.rng = np.random.default_rng()
+    def __init__(self, seed: Optional[int] = None):
+        self.seed = seed
+        self.rng = np.random.default_rng(seed=seed)
+
+    def get_seed(self) -> Optional[int]:
+        """Return the seed used to initialize the RNG, or None if no seed was set."""
+        return self.seed
+
+    def set_seed(self, seed: Optional[int] = None):
+        """Reset the RNG with a new seed."""
+        self.seed = seed
+        self.rng = np.random.default_rng(seed=seed)
 
     def random(self):
         return self.rng.random()

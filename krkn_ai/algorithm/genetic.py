@@ -42,13 +42,21 @@ class GeneticAlgorithm:
         format: str,
         runner_type: KrknRunnerType = None,
     ):
+        self.output_dir = output_dir
+        self.config = config
+        self.format = format
+
+        # Initialize RNG with seed for reproducibility
+        rng.set_seed(self.config.seed)
+        if self.config.seed is not None:
+            logger.info("Random seed: %s (reproducible mode)", self.config.seed)
+        else:
+            logger.info("Random seed: None (non-reproducible mode)")
+
         self.krkn_client = KrknRunner(
             config, output_dir=output_dir, runner_type=runner_type
         )
-        self.output_dir = output_dir
-        self.config = config
         self.population: List[BaseScenario] = []
-        self.format = format
 
         self.stagnant_generations = 0
 
