@@ -243,6 +243,31 @@ Options:
 
 > **Note:** You can also run Krkn-AI as a container with Podman or on Kubernetes. See [container instructions](./containers/README.md).
 
+### 🔁 Reproducible Runs with Seed
+
+Krkn-AI supports reproducible chaos experiment runs using a configurable random seed.
+When a seed is provided, all random operations such as initial population generation,
+mutation, and crossover follow a deterministic execution path.
+
+This is useful for debugging, testing, and comparing experiment behavior across runs.
+
+#### Using Seed from CLI
+
+The seed can be overridden from the command line using the `--seed` flag:
+
+```bash
+uv run krkn_ai run \
+  -c ./tmp/krkn-ai.yaml \
+  -o ./tmp/results/ \
+  --seed 42
+```
+If both the configuration file and CLI specify a seed, the CLI value takes precedence.
+
+### Seed in Output Artifacts
+For traceability and reproducibility, the seed used for a run is logged and persisted
+in the generated output configuration. This allows users to re-run experiments with
+the same parameters and execution behavior.
+
 ### Understanding Results
 
 Krkn-AI saves results in the specified output directory:
